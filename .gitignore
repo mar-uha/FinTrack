@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sqlite local db (root + prisma/)
+/dev.db
+/dev.db-journal
+/*.db
+/prisma/*.db
+/prisma/*.db-journal
+
+# personal financial data — never commit
+*.csv
+/uploads/
+
+
+/src/generated/prisma

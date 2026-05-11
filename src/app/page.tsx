@@ -1,65 +1,161 @@
-import Image from "next/image";
+import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@/generated/prisma/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { TransactionFilters } from "@/components/transaction-filters";
+import { TransactionRow } from "@/components/transaction-row";
 
-export default function Home() {
+type SearchParams = {
+  month?: string;
+  categoryId?: string;
+  type?: "RECURRENT" | "VARIABLE";
+  q?: string;
+};
+
+function monthRange(yyyymm: string): { start: Date; end: Date } | null {
+  const m = /^(\d{4})-(\d{2})$/.exec(yyyymm);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  if (mo < 1 || mo > 12) return null;
+  return {
+    start: new Date(Date.UTC(y, mo - 1, 1)),
+    end: new Date(Date.UTC(y, mo, 1)),
+  };
+}
+
+function formatAmount(value: number): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
+}
+
+function formatDate(d: Date): string {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+  }).format(d);
+}
+
+function lastMonths(count: number): string[] {
+  const now = new Date();
+  const out: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    out.push(
+      `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+    );
+  }
+  return out;
+}
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const sp = await searchParams;
+
+  const where: Prisma.TransactionWhereInput = {};
+  if (sp.month) {
+    const range = monthRange(sp.month);
+    if (range) {
+      where.dateOp = { gte: range.start, lt: range.end };
+    }
+  }
+  if (sp.categoryId) {
+    where.categoryId = sp.categoryId;
+  }
+  if (sp.type) {
+    where.category = { type: sp.type };
+  }
+  if (sp.q) {
+    where.label = { contains: sp.q };
+  }
+
+  const [transactions, categories, totalCount] = await Promise.all([
+    prisma.transaction.findMany({
+      where,
+      orderBy: { dateOp: "desc" },
+      include: { category: true },
+      take: 200,
+    }),
+    prisma.category.findMany({
+      orderBy: [{ parentName: "asc" }, { name: "asc" }],
+    }),
+    prisma.transaction.count({ where }),
+  ]);
+
+  const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="space-y-4">
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-2xl font-semibold">Transactions</h1>
+        <span className="text-sm text-muted-foreground">
+          {totalCount} entrée{totalCount > 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <TransactionFilters
+        months={lastMonths(12)}
+        categories={categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          parentName: c.parentName,
+        }))}
+        defaultValues={{
+          month: sp.month ?? "",
+          categoryId: sp.categoryId ?? "",
+          type: sp.type ?? "",
+          q: sp.q ?? "",
+        }}
+      />
+
+      {transactions.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Aucune transaction. Commence par{" "}
+            <a href="/import" className="underline">
+              importer un relevé
+            </a>
+            .
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">
+              Total {transactions.length > 199 ? "(200 premières)" : ""}
+            </span>
+            <span className={total < 0 ? "text-red-600" : "text-emerald-600"}>
+              {formatAmount(total)}
+            </span>
+          </div>
+
+          <ul className="divide-y rounded-lg border bg-card">
+            {transactions.map((t) => {
+              const amount = Number(t.amount);
+              return (
+                <TransactionRow
+                  key={t.id}
+                  id={t.id}
+                  date={formatDate(t.dateOp)}
+                  label={t.label}
+                  amount={amount}
+                  amountText={formatAmount(amount)}
+                  categoryId={t.categoryId}
+                  categories={categories.map((c) => ({
+                    id: c.id,
+                    name: c.name,
+                    parentName: c.parentName,
+                  }))}
+                />
+              );
+            })}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//opt/homebrew/Cellar/**)",
+      "Bash(command -v fnm)",
+      "Bash(command -v volta)",
+      "Read(//Users/marcuhart/**)",
+      "Bash(awk -F';' 'NR>1 {gsub\\(/\"/, \"\", $4\\); gsub\\(/\"/, \"\", $5\\); print $5\"|\"$4}' /Users/marcuhart/Claude/FinTrack/export-operations-01-01-2025_07-05-2026.csv)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias '@/*' --use-npm --no-turbopack --yes)",
+      "Bash(npx --yes create-next-app@latest fintrack-app --typescript --tailwind --eslint --app --src-dir --import-alias '@/*' --use-npm --no-turbopack --yes)",
+      "Bash(shopt -s dotglob)",
+      "Bash(mv fintrack-app/* .)",
+      "Bash(mv fintrack-app/.[!.]* .)",
+      "Bash(npx --yes shadcn@latest init --yes --base-color slate)",
+      "Bash(npx --yes shadcn@latest init --help)",
+      "Bash(npx --yes shadcn@latest init -d -y --force)",
+      "Bash(npm i *)",
+      "Bash(npm run *)",
+      "Read(//private/tmp/**)"
+    ]
+  }
+}

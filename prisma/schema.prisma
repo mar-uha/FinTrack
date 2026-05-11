@@ -1,0 +1,73 @@
+// FinTrack — schéma local SQLite
+// Voir SPECIFICATIONS.md pour le contexte fonctionnel.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum CategoryType {
+  RECURRENT
+  VARIABLE
+}
+
+model User {
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+  image String?
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  parentName   String
+  type         CategoryType  @default(VARIABLE)
+  color        String?
+  icon         String?
+  transactions Transaction[]
+  budgets      Budget[]
+}
+
+model Transaction {
+  id            String       @id @default(cuid())
+  dateOp        DateTime
+  dateVal       DateTime
+  label         String
+  amount        Decimal
+  comment       String?
+  supplierFound String?
+  accountNum    String
+  accountLabel  String?
+  categoryId    String?
+  category      Category?    @relation(fields: [categoryId], references: [id])
+  importBatchId String?
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id])
+  dedupHash     String       @unique
+  createdAt     DateTime     @default(now())
+
+  @@index([dateOp])
+  @@index([categoryId])
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  month      String
+  amount     Decimal
+
+  @@unique([categoryId, month])
+}
+
+model ImportBatch {
+  id           String        @id @default(cuid())
+  filename     String
+  importedAt   DateTime      @default(now())
+  count        Int
+  transactions Transaction[]
+}

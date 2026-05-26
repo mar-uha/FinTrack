@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { parseBoursoCsv } from "@/lib/csv";
 
@@ -73,6 +74,10 @@ export async function POST(request: Request) {
     where: { id: batch.id },
     data: { count: result.count },
   });
+
+  // New transactions show up on the dashboard and the list.
+  revalidatePath("/");
+  revalidatePath("/transactions");
 
   return NextResponse.json({
     inserted: result.count,

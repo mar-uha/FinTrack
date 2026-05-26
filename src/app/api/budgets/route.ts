@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
@@ -56,6 +57,10 @@ export async function POST(request: Request) {
       upserted += 1;
     }
   }
+
+  // Budgets feed both the /budgets edit page and the / dashboard.
+  revalidatePath("/budgets");
+  revalidatePath("/");
 
   return NextResponse.json({ upserted, deleted });
 }

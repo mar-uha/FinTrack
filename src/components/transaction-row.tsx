@@ -61,7 +61,9 @@ export function TransactionRow({
   const dim = saving || pending;
 
   return (
-    <li className={`p-3 flex items-start gap-3 ${dim ? "opacity-60" : ""}`}>
+    <li
+      className={`p-3 flex items-start gap-3 transition-colors hover:bg-accent/40 ${dim ? "opacity-60" : ""}`}
+    >
       <div className="text-xs text-muted-foreground w-12 shrink-0 pt-1">
         {date}
       </div>

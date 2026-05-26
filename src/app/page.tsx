@@ -122,7 +122,6 @@ export default async function DashboardPage({
       include: { category: true },
     }),
     prisma.budget.findMany({
-      where: { month },
       include: { category: true },
     }),
   ]);

@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { isValidMonth } from "@/lib/months";
 
 const BodySchema = z.object({
-  month: z.string().refine(isValidMonth, { message: "Mois invalide (YYYY-MM)" }),
   budgets: z.array(
     z.object({
       categoryId: z.string().min(1),
@@ -24,7 +23,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { month, budgets } = parsed.data;
+  const { budgets } = parsed.data;
 
   // Validate every categoryId actually exists, in one query.
   const categoryIds = [...new Set(budgets.map((b) => b.categoryId))];
@@ -46,18 +45,22 @@ export async function POST(request: Request) {
     const isZeroOrNull = b.amount === null || b.amount === 0;
     if (isZeroOrNull) {
       const res = await prisma.budget.deleteMany({
-        where: { categoryId: b.categoryId, month },
+        where: { categoryId: b.categoryId },
       });
       deleted += res.count;
     } else {
       await prisma.budget.upsert({
-        where: { categoryId_month: { categoryId: b.categoryId, month } },
+        where: { categoryId: b.categoryId },
         update: { amount: b.amount! },
-        create: { categoryId: b.categoryId, month, amount: b.amount! },
+        create: { categoryId: b.categoryId, amount: b.amount! },
       });
       upserted += 1;
     }
   }
 
-  return NextResponse.json({ month, upserted, deleted });
+  // Budgets feed both the /budgets edit page and the / dashboard.
+  revalidatePath("/budgets");
+  revalidatePath("/");
+
+  return NextResponse.json({ upserted, deleted });
 }

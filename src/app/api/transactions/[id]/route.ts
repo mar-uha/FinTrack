@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
@@ -35,6 +36,10 @@ export async function PATCH(
     data: { categoryId: parsed.data.categoryId },
     include: { category: true },
   });
+
+  // Transaction category affects dashboard aggregates and the list filters.
+  revalidatePath("/");
+  revalidatePath("/transactions");
 
   return NextResponse.json({
     id: updated.id,

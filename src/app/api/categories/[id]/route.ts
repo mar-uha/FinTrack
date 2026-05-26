@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
@@ -25,6 +26,13 @@ export async function PATCH(
     data: { type: parsed.data.type },
     select: { id: true, type: true },
   });
+
+  // Category type drives the recurrent/variable split on the dashboard,
+  // the type filter on /transactions, and the form on /budgets.
+  revalidatePath("/");
+  revalidatePath("/transactions");
+  revalidatePath("/budgets");
+  revalidatePath("/settings/categories");
 
   return NextResponse.json(updated);
 }

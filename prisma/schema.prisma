@@ -56,12 +56,9 @@ model Transaction {
 
 model Budget {
   id         String   @id @default(cuid())
-  categoryId String
+  categoryId String   @unique
   category   Category @relation(fields: [categoryId], references: [id])
-  month      String
   amount     Decimal
-
-  @@unique([categoryId, month])
 }
 
 model ImportBatch {

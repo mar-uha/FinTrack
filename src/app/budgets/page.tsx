@@ -1,50 +1,25 @@
 import { prisma } from "@/lib/prisma";
 import { BudgetForm } from "@/components/budget-form";
-import { MonthPicker } from "@/components/month-picker";
-import {
-  currentMonth,
-  formatMonthLong,
-  isValidMonth,
-  lastMonths,
-  previousMonth,
-} from "@/lib/months";
 
-type SearchParams = { month?: string };
-
-export default async function BudgetsPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const sp = await searchParams;
-  const month = sp.month && isValidMonth(sp.month) ? sp.month : currentMonth();
-  const prev = previousMonth(month) ?? month;
-  const months = lastMonths(12, month);
-
+export default async function BudgetsPage() {
   const [categories, budgets] = await Promise.all([
     prisma.category.findMany({
       orderBy: [{ parentName: "asc" }, { name: "asc" }],
     }),
-    prisma.budget.findMany({ where: { month } }),
+    prisma.budget.findMany(),
   ]);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Budgets</h1>
-        <div className="w-44 shrink-0">
-          <MonthPicker months={months} value={month} basePath="/budgets" />
-        </div>
-      </div>
+      <h1 className="text-2xl font-semibold">Budgets</h1>
 
       <p className="text-sm text-muted-foreground">
-        Définis un montant mensuel par catégorie pour <strong>{formatMonthLong(month)}</strong>. Les
-        valeurs vides ou à 0 ne sont pas enregistrées.
+        Définis un montant <strong>mensuel cible</strong> par catégorie. Le même
+        montant s'applique à chaque mois et sert de référence sur le tableau de
+        bord. Les valeurs vides ou à 0 ne sont pas enregistrées.
       </p>
 
       <BudgetForm
-        month={month}
-        previousMonth={prev}
         categories={categories.map((c) => ({
           id: c.id,
           name: c.name,

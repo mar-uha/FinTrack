@@ -10,8 +10,6 @@ type Category = { id: string; name: string; parentName: string };
 type BudgetItem = { categoryId: string; amount: number };
 
 type Props = {
-  month: string;
-  previousMonth: string;
   categories: Category[];
   existing: BudgetItem[];
 };
@@ -20,14 +18,9 @@ type Status =
   | { kind: "idle" }
   | { kind: "saving" }
   | { kind: "saved"; upserted: number; deleted: number }
-  | { kind: "duplicating" }
-  | { kind: "duplicated"; created: number }
   | { kind: "error"; message: string };
 
-const SELECT_CLASS =
-  "h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring";
-
-export function BudgetForm({ month, previousMonth, categories, existing }: Props) {
+export function BudgetForm({ categories, existing }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -61,7 +54,6 @@ export function BudgetForm({ month, previousMonth, categories, existing }: Props
   async function save() {
     setStatus({ kind: "saving" });
     const payload = {
-      month,
       budgets: categories.map((c) => {
         const raw = values[c.id]?.trim() ?? "";
         const n = raw === "" ? null : Number(raw.replace(",", "."));
@@ -86,23 +78,7 @@ export function BudgetForm({ month, previousMonth, categories, existing }: Props
     startTransition(() => router.refresh());
   }
 
-  async function duplicate() {
-    setStatus({ kind: "duplicating" });
-    const res = await fetch("/api/budgets/duplicate", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ from: previousMonth, to: month }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setStatus({ kind: "error", message: json.error ?? "Erreur" });
-      return;
-    }
-    setStatus({ kind: "duplicated", created: json.created });
-    startTransition(() => router.refresh());
-  }
-
-  const busy = status.kind === "saving" || status.kind === "duplicating" || pending;
+  const busy = status.kind === "saving" || pending;
   const formatEur = new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
@@ -116,14 +92,6 @@ export function BudgetForm({ month, previousMonth, categories, existing }: Props
           <AlertTitle>Budgets enregistrés</AlertTitle>
           <AlertDescription>
             {status.upserted} ligne(s) mises à jour, {status.deleted} supprimée(s).
-          </AlertDescription>
-        </Alert>
-      )}
-      {status.kind === "duplicated" && (
-        <Alert>
-          <AlertTitle>Budgets dupliqués</AlertTitle>
-          <AlertDescription>
-            {status.created} ligne(s) copiée(s) depuis {previousMonth}. Pense à enregistrer si tu modifies.
           </AlertDescription>
         </Alert>
       )}
@@ -173,23 +141,13 @@ export function BudgetForm({ month, previousMonth, categories, existing }: Props
       </div>
 
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Total mensuel</span>
+        <span className="text-muted-foreground">Total mensuel cible</span>
         <span className="font-medium tabular-nums">{formatEur.format(total)}</span>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <Button onClick={save} disabled={busy}>
           {status.kind === "saving" ? "Enregistrement…" : "Enregistrer"}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={duplicate}
-          disabled={busy}
-          title={`Copier depuis ${previousMonth}`}
-        >
-          {status.kind === "duplicating"
-            ? "Duplication…"
-            : `Dupliquer ${previousMonth}`}
         </Button>
       </div>
     </div>

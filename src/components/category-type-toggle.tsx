@@ -73,7 +73,7 @@ export function CategoryTypeToggle({ id, type }: Props) {
           Variable
         </button>
       </div>
-      {error && <span className="text-[10px] text-red-600">{error}</span>}
+      {error && <span className="text-[10px] text-destructive">{error}</span>}
     </div>
   );
 }

@@ -89,13 +89,13 @@ export function TransactionRow({
             ))}
           </select>
           {error && (
-            <span className="text-[10px] text-red-600">{error}</span>
+            <span className="text-[10px] text-destructive">{error}</span>
           )}
         </div>
       </div>
       <div
         className={`text-sm font-medium tabular-nums shrink-0 ${
-          amount < 0 ? "text-red-600" : "text-emerald-600"
+          amount < 0 ? "text-foreground" : "text-primary"
         }`}
       >
         {amountText}

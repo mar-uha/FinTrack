@@ -8,17 +8,18 @@ type Props = {
   data: Slice[];
 };
 
-// Curated palette — distinct hues at consistent saturation/luminance.
+// Curated palette — emerald leads to match the app accent, then distinct hues
+// at consistent saturation/luminance so they work in light and dark modes.
 const COLORS = [
+  "#10b981", // emerald-500 — primary accent
   "#0ea5e9", // sky-500
-  "#22c55e", // green-500
   "#f59e0b", // amber-500
-  "#a855f7", // purple-500
+  "#8b5cf6", // violet-500
   "#ef4444", // red-500
   "#14b8a6", // teal-500
   "#ec4899", // pink-500
   "#84cc16", // lime-500
-  "#6b7280", // gray-500 — fallback / "Autres"
+  "#94a3b8", // slate-400 — fallback / "Autres"
 ];
 
 const EUR = new Intl.NumberFormat("fr-FR", {

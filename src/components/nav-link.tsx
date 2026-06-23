@@ -16,12 +16,12 @@ export function NavLink({ href, children, exact = false }: Props) {
   return (
     <Link
       href={href}
-      className={`transition-colors hover:text-foreground ${
-        active
-          ? "text-foreground font-medium"
-          : "text-muted-foreground hover:underline"
-      }`}
       aria-current={active ? "page" : undefined}
+      className={`px-3 py-1.5 rounded-full whitespace-nowrap transition-colors ${
+        active
+          ? "bg-accent text-accent-foreground font-medium"
+          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+      }`}
     >
       {children}
     </Link>

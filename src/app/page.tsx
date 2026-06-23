@@ -177,70 +177,110 @@ export default async function DashboardPage({
 
   const months = lastMonths(12, month);
 
+  const summaryPct =
+    totalBudgeted > 0 ? Math.min(100, (agg.totalSpent / totalBudgeted) * 100) : 0;
+  const summaryOver = totalBudgeted > 0 && agg.totalSpent > totalBudgeted;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Tableau de bord</h1>
-        <div className="w-44 shrink-0">
+    <div className="space-y-5">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            {formatMonthLong(month)}
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">Tableau de bord</h1>
+        </div>
+        <div className="w-40 shrink-0">
           <MonthPicker months={months} value={month} basePath="/" />
         </div>
       </div>
 
       {thisMonthTx.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            Aucune transaction pour {formatMonthLong(month)}. {" "}
-            <Link href="/import" className="underline">
-              importer un relevé
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <p className="text-sm">
+              Aucune transaction pour {formatMonthLong(month)}.
+            </p>
+            <Link
+              href="/import"
+              className="inline-block mt-2 text-primary hover:underline"
+            >
+              Importer un relevé →
             </Link>
-            .
           </CardContent>
         </Card>
       ) : (
         <>
-          {/* Summary */}
+          {/* Hero summary */}
           <Card>
-            <CardContent className="py-4">
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <Stat label="Dépensé" value={EUR.format(agg.totalSpent)} />
-                <Stat
-                  label="Budget"
-                  value={totalBudgeted > 0 ? EUR.format(totalBudgeted) : "—"}
-                  muted={totalBudgeted === 0}
-                />
-                <Stat
-                  label="Restant"
-                  value={
-                    totalBudgeted > 0 ? EUR.format(balance) : "—"
-                  }
-                  color={
-                    totalBudgeted === 0
-                      ? "default"
-                      : balance < 0
-                        ? "red"
-                        : "green"
-                  }
-                />
+            <CardContent className="py-6 space-y-4">
+              <div className="text-center">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Dépensé
+                </p>
+                <p className="mt-1 text-4xl font-bold tabular-nums tracking-tight">
+                  {EUR.format(agg.totalSpent)}
+                </p>
               </div>
-              <div className="mt-3 text-xs text-muted-foreground text-center">
+
+              {totalBudgeted > 0 ? (
+                <div className="space-y-2">
+                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+                        summaryOver ? "bg-destructive" : "bg-primary"
+                      }`}
+                      style={{ width: `${summaryPct}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                      Budget {EUR0.format(totalBudgeted)}
+                    </span>
+                    <span
+                      className={
+                        balance < 0
+                          ? "text-destructive font-medium"
+                          : "text-primary font-medium"
+                      }
+                    >
+                      {balance < 0 ? "Dépassé de " : "Restant "}
+                      {EUR0.format(Math.abs(balance))}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-center text-xs text-muted-foreground">
+                  Aucun budget défini —{" "}
+                  <Link href="/budgets" className="text-primary hover:underline">
+                    en saisir
+                  </Link>
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground border-t border-border/60 pt-3">
                 {deltaPct !== null ? (
-                  <>
-                    {deltaPct >= 0 ? "+" : ""}
-                    {deltaPct.toFixed(1)}% vs {formatMonthLong(prev)} (
-                    {EUR0.format(prevAgg.totalSpent)})
-                  </>
+                  <span className="inline-flex items-center gap-1">
+                    <span aria-hidden>{deltaPct >= 0 ? "↑" : "↓"}</span>
+                    <span>
+                      {Math.abs(deltaPct).toFixed(1)}% vs {formatMonthLong(prev)}
+                    </span>
+                  </span>
                 ) : (
-                  <>Aucun historique pour {formatMonthLong(prev)}</>
+                  <span>Pas d'historique pour {formatMonthLong(prev)}</span>
                 )}
                 {agg.totalIncome > 0 && (
-                  <> · Revenus encaissés : {EUR0.format(agg.totalIncome)}</>
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>Revenus {EUR0.format(agg.totalIncome)}</span>
+                  </>
                 )}
               </div>
             </CardContent>
           </Card>
 
           {/* Récurrent / Variable */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <TypeCard
               label="Récurrent"
               spent={agg.byType.RECURRENT}
@@ -268,7 +308,7 @@ export default async function DashboardPage({
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Par catégorie</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3.5">
               {rows.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucune donnée.</p>
               ) : (
@@ -299,37 +339,6 @@ export default async function DashboardPage({
   );
 }
 
-function Stat({
-  label,
-  value,
-  color = "default",
-  muted = false,
-}: {
-  label: string;
-  value: string;
-  color?: "default" | "red" | "green";
-  muted?: boolean;
-}) {
-  const colorClass =
-    color === "red"
-      ? "text-red-600"
-      : color === "green"
-        ? "text-emerald-600"
-        : "";
-  return (
-    <div>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div
-        className={`text-lg font-semibold tabular-nums ${colorClass} ${muted ? "text-muted-foreground" : ""}`}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
 function TypeCard({
   label,
   spent,
@@ -343,23 +352,24 @@ function TypeCard({
   const over = budget > 0 && spent > budget;
   return (
     <Card>
-      <CardContent className="py-3">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+      <CardContent className="py-3 space-y-2">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">
           {label}
         </div>
-        <div className="text-base font-semibold tabular-nums">
+        <div className="text-lg font-semibold tabular-nums leading-none">
           {EUR0.format(spent)}
           {budget > 0 && (
-            <span className="text-xs font-normal text-muted-foreground">
-              {" / "}
-              {EUR0.format(budget)}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">
+              / {EUR0.format(budget)}
             </span>
           )}
         </div>
         {budget > 0 && (
-          <div className="mt-2 h-1.5 w-full rounded bg-muted overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
-              className={`h-full transition-[width] duration-500 ease-out ${over ? "bg-red-500" : "bg-emerald-500"}`}
+              className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+                over ? "bg-destructive" : "bg-primary"
+              }`}
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -388,13 +398,13 @@ function CategoryProgressRow({
         <div className="min-w-0 flex-1">
           <div className="text-sm truncate">{name}</div>
           {parentName && (
-            <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
               {parentName}
             </div>
           )}
         </div>
         <div className="text-sm tabular-nums shrink-0">
-          <span className={over ? "text-red-600 font-medium" : ""}>
+          <span className={over ? "text-destructive font-medium" : ""}>
             {EUR0.format(spent)}
           </span>
           {budget > 0 && (
@@ -405,14 +415,19 @@ function CategoryProgressRow({
           )}
         </div>
       </div>
-      <div className="mt-1 h-1.5 w-full rounded bg-muted overflow-hidden">
+      <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
         {budget > 0 ? (
           <div
-            className={`h-full transition-[width] duration-500 ease-out ${over ? "bg-red-500" : "bg-emerald-500"}`}
+            className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+              over ? "bg-destructive" : "bg-primary"
+            }`}
             style={{ width: `${pct}%` }}
           />
         ) : spent > 0 ? (
-          <div className="h-full bg-muted-foreground/30" style={{ width: "100%" }} />
+          <div
+            className="h-full rounded-full bg-muted-foreground/30"
+            style={{ width: "100%" }}
+          />
         ) : null}
       </div>
     </div>

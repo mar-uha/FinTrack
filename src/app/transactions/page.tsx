@@ -117,7 +117,9 @@ export default async function TransactionsPage({
             <span className="text-muted-foreground">
               Total {transactions.length > 199 ? "(200 premières)" : ""}
             </span>
-            <span className={total < 0 ? "text-red-600" : "text-emerald-600"}>
+            <span
+              className={`font-medium tabular-nums ${total < 0 ? "text-destructive" : "text-primary"}`}
+            >
               {formatAmount(total)}
             </span>
           </div>
